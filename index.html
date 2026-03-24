@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<!-- Teacher Dashboard · VEHO Vocab Trainers -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VEHO Teacher Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --card-border: #e2e5ea;
+  --text: #1a1d23;
+  --text-secondary: #5f6775;
+  --muted: #9ba3b0;
+  --accent: #3b82f6;
+  --accent-light: #dbeafe;
+  --correct: #16a34a;
+  --correct-light: #dcfce7;
+  --warn: #f59e0b;
+  --warn-light: #fef3c7;
+  --danger: #ef4444;
+  --danger-light: #fee2e2;
+  --purple: #8b5cf6;
+  --purple-light: #ede9fe;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Screens */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* Login */
+.login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.login-card { background: var(--card); border-radius: 16px; padding: 2.5rem; box-shadow: var(--shadow); max-width: 380px; width: 100%; text-align: center; }
+.login-card h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.3rem; }
+.login-card .sub { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; }
+.login-card input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--card-border); border-radius: var(--radius); font-size: 1.1rem; font-family: inherit; text-align: center; letter-spacing: 0.5em; margin-bottom: 1rem; }
+.login-card input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.login-card .error { color: var(--danger); font-size: 0.82rem; margin-bottom: 0.5rem; }
+
+/* Header */
+.header { background: var(--card); border-bottom: 1px solid var(--card-border); padding: 0.8rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+.header h1 { font-size: 1.1rem; font-weight: 800; }
+.header .logout { font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--card-border); background: none; font-family: inherit; }
+.header .logout:hover { background: var(--bg); }
+
+/* Tabs */
+.tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--card-border); padding: 0 1.5rem; gap: 0; overflow-x: auto; }
+.tab { padding: 0.75rem 1.2rem; font-size: 0.85rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2.5px solid transparent; transition: all 0.15s; white-space: nowrap; }
+.tab:hover { color: var(--text-secondary); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Main content */
+.main { max-width: 1200px; margin: 0 auto; padding: 1.2rem 1.5rem; }
+
+/* Summary cards */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.8rem; margin-bottom: 1.2rem; }
+.summary-card { background: var(--card); border-radius: var(--radius); padding: 1rem; box-shadow: var(--shadow); }
+.summary-card .label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.3rem; }
+.summary-card .value { font-size: 1.5rem; font-weight: 800; }
+.summary-card .value.accent { color: var(--accent); }
+.summary-card .value.correct { color: var(--correct); }
+.summary-card .value.warn { color: var(--warn); }
+.summary-card .value.purple { color: var(--purple); }
+
+/* Student table */
+.table-wrap { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.table-wrap th { background: var(--bg); padding: 0.65rem 0.8rem; text-align: left; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); cursor: pointer; user-select: none; white-space: nowrap; border-bottom: 1px solid var(--card-border); }
+.table-wrap th:hover { color: var(--accent); }
+.table-wrap th .sort-arrow { margin-left: 0.3rem; font-size: 0.7rem; }
+.table-wrap td { padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--card-border); }
+.table-wrap tr:last-child td { border-bottom: none; }
+.table-wrap tr.clickable { cursor: pointer; }
+.table-wrap tr.clickable:hover { background: var(--accent-light); }
+.table-wrap tr.status-active td:first-child { border-left: 3px solid var(--correct); }
+.table-wrap tr.status-warn td:first-child { border-left: 3px solid var(--warn); }
+.table-wrap tr.status-danger td:first-child { border-left: 3px solid var(--danger); }
+.badge-dots { display: flex; gap: 2px; flex-wrap: wrap; }
+.badge-dot { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+
+/* Loading */
+.loading { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.9rem; }
+
+/* Student Detail */
+.detail-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+.detail-header .back { font-size: 0.85rem; color: var(--accent); cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--accent); background: none; font-family: inherit; font-weight: 600; }
+.detail-header .back:hover { background: var(--accent-light); }
+.detail-header h2 { font-size: 1.3rem; font-weight: 800; }
+.detail-header .detail-badges { display: flex; gap: 4px; font-size: 16px; }
+.detail-header .xp-tag { font-size: 0.85rem; font-weight: 700; color: var(--accent); background: var(--accent-light); padding: 0.2rem 0.6rem; border-radius: 20px; }
+
+.detail-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; margin-bottom: 1.2rem; }
+.detail-stat { background: var(--card); padding: 0.8rem; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; }
+.detail-stat .val { font-size: 1.3rem; font-weight: 800; }
+.detail-stat .lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+
+/* Unit progress */
+.unit-section { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 0.8rem; overflow: hidden; }
+.unit-header { padding: 0.7rem 1rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 700; font-size: 0.88rem; }
+.unit-header:hover { background: var(--bg); }
+.unit-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: #e5e7eb; flex: 1; margin-left: 1rem; max-width: 300px; }
+.unit-bar .seg-mastered { background: var(--correct); }
+.unit-bar .seg-practiced { background: var(--accent); }
+.unit-bar .seg-weak { background: var(--danger); }
+.unit-words { display: none; padding: 0.5rem 1rem 1rem; border-top: 1px solid var(--card-border); }
+.unit-words.open { display: block; }
+.word-row { display: flex; align-items: center; padding: 0.25rem 0; font-size: 0.82rem; gap: 0.5rem; }
+.word-row .word-text { flex: 1; font-weight: 500; }
+.word-row .word-stat { font-size: 0.75rem; color: var(--muted); min-width: 50px; }
+.word-row .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-mastered { background: var(--correct); }
+.dot-practiced { background: var(--accent); }
+.dot-weak { background: var(--danger); }
+.dot-unseen { background: #d1d5db; }
+.unit-summary { font-size: 0.75rem; color: var(--muted); }
+
+/* Session history */
+.sessions-table { width: 100%; font-size: 0.82rem; border-collapse: collapse; }
+.sessions-table th { text-align: left; padding: 0.5rem; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--card-border); }
+.sessions-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--card-border); }
+.pct-badge { padding: 0.15rem 0.5rem; border-radius: 20px; font-weight: 700; font-size: 0.78rem; }
+.pct-high { background: var(--correct-light); color: var(--correct); }
+.pct-mid { background: var(--warn-light); color: var(--warn); }
+.pct-low { background: var(--danger-light); color: var(--danger); }
+
+/* Daily log */
+.daily-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 0.4rem; }
+.daily-item { background: var(--bg); padding: 0.4rem; border-radius: 6px; text-align: center; font-size: 0.78rem; }
+.daily-item .d-date { color: var(--muted); font-size: 0.7rem; }
+.daily-item .d-score { font-weight: 700; }
+
+.section-title { font-size: 0.9rem; font-weight: 700; margin: 1.2rem 0 0.6rem; }
+
+/* Buttons */
+.btn { padding: 0.6rem 1.2rem; border: none; border-radius: var(--radius); font-size: 0.85rem; cursor: pointer; font-weight: 700; font-family: inherit; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #2563eb; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Print */
+@media print {
+  .header, .tabs, .btn, .logout { display: none !important; }
+  .main { padding: 0; max-width: 100%; }
+  .table-wrap, .unit-section, .summary-card, .detail-stat { box-shadow: none; border: 1px solid #ddd; }
+}
+@media (max-width: 768px) {
+  .main { padding: 0.8rem; }
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .detail-stats { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="screen active">
+  <div class="login-wrap">
+    <div class="login-card">
+      <h1>VEHO Teacher Dashboard</h1>
+      <div class="sub">Enter your teacher PIN to continue</div>
+      <div class="error" id="login-error"></div>
+      <input type="text" id="pin-input" maxlength="6" placeholder="PIN" autocomplete="off" style="-webkit-text-security:disc;">
+      <button class="btn btn-primary" style="width:100%;" onclick="handleLogin()">Log In</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-screen" class="screen">
+  <div class="header">
+    <h1>VEHO Teacher Dashboard</h1>
+    <button class="logout" onclick="logout()">Log Out</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="main" id="main-content">
+    <div class="loading">Loading...</div>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div id="detail-screen" class="screen">
+  <div class="header">
+    <h1>VEHO Teacher Dashboard</h1>
+    <button class="logout" onclick="logout()">Log Out</button>
+  </div>
+  <div class="main" id="detail-content"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script>
+// ===== FIREBASE =====
+firebase.initializeApp({
+  apiKey: "AIzaSyDBZaWpfNXamve3OiiqFG1HdoA-KMa3un8",
+  authDomain: "veho-vocab.firebaseapp.com",
+  projectId: "veho-vocab",
+  storageBucket: "veho-vocab.firebasestorage.app",
+  messagingSenderId: "623091115688",
+  appId: "1:623091115688:web:8c8fcbc87a623056d8449d"
+});
+const db = firebase.firestore();
+
+const CLASSES = [
+  { id: '2nd-grade', label: '2nd Grade', color: '#e07830' },
+  { id: '3rd-grade', label: '3rd Grade', color: '#3b82f6' },
+  { id: '4th-grade', label: '4th Grade', color: '#8b5cf6' },
+  { id: '5b', label: '5B', color: '#14b8a6' },
+];
+
+const TEACHER_PIN = 'veho2025';
+const BADGE_MAP = {
+  'first-session':'⭐','ten-sessions':'🔥','fifty-sessions':'🚀',
+  'mastered-10':'🧠','mastered-50':'📚','mastered-100':'🏆','mastered-all':'👑',
+  'perfect-round':'💯','streak-3':'🔥','streak-7':'⚡','all-types':'🎨',
+  'daily-first':'🌅','daily-perfect':'✨','speed-demon':'⚡','sprinter':'🏃','sharp-eye':'👁️'
+};
+
+let currentClass = CLASSES[0].id;
+let classCache = {};
+let currentSort = { col: 'xp', asc: false };
+
+// ===== AUTH =====
+function handleLogin() {
+  const pin = document.getElementById('pin-input').value.trim();
+  if (pin === TEACHER_PIN) {
+    localStorage.setItem('teacher-pin', pin);
+    showMain();
+  } else {
+    document.getElementById('login-error').textContent = 'Wrong PIN. Try again.';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('teacher-pin');
+  showScreen('login-screen');
+}
+
+function checkAuth() {
+  if (localStorage.getItem('teacher-pin') === TEACHER_PIN) { showMain(); }
+}
+
+// ===== NAVIGATION =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showMain() {
+  showScreen('main-screen');
+  renderTabs();
+  loadClass(currentClass);
+}
+
+function renderTabs() {
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = CLASSES.map(c =>
+    `<div class="tab ${c.id === currentClass ? 'active' : ''}" onclick="switchClass('${c.id}')" style="${c.id === currentClass ? 'border-bottom-color:'+c.color+';color:'+c.color : ''}">${c.label}</div>`
+  ).join('');
+}
+
+function switchClass(classId) {
+  currentClass = classId;
+  renderTabs();
+  loadClass(classId);
+}
+
+// ===== DATA LOADING =====
+async function loadClass(classId) {
+  const main = document.getElementById('main-content');
+  main.innerHTML = '<div class="loading">Loading students...</div>';
+
+  if (classCache[classId]) {
+    renderClassOverview(classCache[classId]);
+    return;
+  }
+
+  try {
+    const snap = await db.collection('classes').doc(classId).collection('students').get();
+    const students = [];
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      // Load progress subcollection
+      const progSnap = await db.collection('classes').doc(classId).collection('students').doc(doc.id).collection('progress').get();
+      const progress = {};
+      progSnap.forEach(p => { progress[p.id] = p.data(); });
+
+      // Load sessions subcollection (last 30)
+      const sessSnap = await db.collection('classes').doc(classId).collection('students').doc(doc.id).collection('sessions').orderBy('date', 'desc').limit(30).get();
+      const sessions = [];
+      sessSnap.forEach(s => { const sd = s.data(); sd._id = s.id; sessions.push(sd); });
+
+      students.push({ id: doc.id, ...d, progress, sessions });
+    }
+    classCache[classId] = students;
+    renderClassOverview(students);
+  } catch (e) {
+    main.innerHTML = `<div class="loading" style="color:var(--danger);">Error loading data: ${e.message}</div>`;
+  }
+}
+
+// ===== CLASS OVERVIEW =====
+function renderClassOverview(students) {
+  const main = document.getElementById('main-content');
+  if (students.length === 0) {
+    main.innerHTML = '<div class="loading">No students registered in this class yet.</div>';
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const now = Date.now();
+
+  // Compute aggregates
+  const totalStudents = students.length;
+  const avgXP = Math.round(students.reduce((s, st) => s + (st.xp || 0), 0) / totalStudents);
+  const avgAcc = Math.round(students.reduce((s, st) => {
+    const ans = st.totalAnswered || 0;
+    return s + (ans > 0 ? (st.totalCorrect || 0) / ans * 100 : 0);
+  }, 0) / totalStudents);
+  const avgStreak = (students.reduce((s, st) => s + (st.streak || 0), 0) / totalStudents).toFixed(1);
+  const dailyDone = students.filter(st => st.dailyChallengeLog && st.dailyChallengeLog[today]).length;
+
+  // Compute mastered per student
+  const enriched = students.map(st => {
+    let mastered = 0, totalWords = 0, weak = 0;
+    if (st.progress) {
+      for (const [slug, prog] of Object.entries(st.progress)) {
+        if (prog.words) {
+          for (const [w, counts] of Object.entries(prog.words)) {
+            totalWords++;
+            const c = counts.c || 0, wr = counts.w || 0;
+            if (c >= 3 && c > wr) mastered++;
+            else if (wr > 0 && wr >= c) weak++;
+          }
+        }
+      }
+    }
+    const ans = st.totalAnswered || 0;
+    const acc = ans > 0 ? Math.round((st.totalCorrect || 0) / ans * 100) : 0;
+    const lastActive = st.lastActive ? (st.lastActive.toDate ? st.lastActive.toDate() : new Date(st.lastActive)) : null;
+    const daysSince = lastActive ? Math.floor((now - lastActive.getTime()) / 86400000) : 999;
+    const status = daysSince <= 3 ? 'active' : daysSince <= 7 ? 'warn' : 'danger';
+    return { ...st, mastered, totalWords, weak, acc, lastActive, daysSince, status };
+  });
+
+  // Sort
+  const sorted = [...enriched].sort((a, b) => {
+    let va = a[currentSort.col], vb = b[currentSort.col];
+    if (currentSort.col === 'name') { va = (va || '').toLowerCase(); vb = (vb || '').toLowerCase(); }
+    if (currentSort.col === 'lastActive') { va = a.daysSince; vb = b.daysSince; }
+    if (currentSort.col === 'badges') { va = (a.badges || []).length; vb = (b.badges || []).length; }
+    if (va < vb) return currentSort.asc ? -1 : 1;
+    if (va > vb) return currentSort.asc ? 1 : -1;
+    return 0;
+  });
+
+  const arrow = (col) => currentSort.col === col ? `<span class="sort-arrow">${currentSort.asc ? '▲' : '▼'}</span>` : '';
+
+  main.innerHTML = `
+    <div class="summary-grid">
+      <div class="summary-card"><div class="label">Students</div><div class="value accent">${totalStudents}</div></div>
+      <div class="summary-card"><div class="label">Avg XP</div><div class="value purple">${avgXP.toLocaleString()}</div></div>
+      <div class="summary-card"><div class="label">Avg Accuracy</div><div class="value correct">${avgAcc}%</div></div>
+      <div class="summary-card"><div class="label">Avg Streak</div><div class="value warn">${avgStreak}</div></div>
+      <div class="summary-card"><div class="label">Daily Challenge Today</div><div class="value accent">${dailyDone}/${totalStudents}</div></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th onclick="sortBy('name')">Name${arrow('name')}</th>
+          <th onclick="sortBy('xp')">XP${arrow('xp')}</th>
+          <th onclick="sortBy('totalSessions')">Sessions${arrow('totalSessions')}</th>
+          <th onclick="sortBy('acc')">Accuracy${arrow('acc')}</th>
+          <th onclick="sortBy('mastered')">Mastered${arrow('mastered')}</th>
+          <th onclick="sortBy('streak')">Streak${arrow('streak')}</th>
+          <th onclick="sortBy('lastActive')">Last Active${arrow('lastActive')}</th>
+          <th onclick="sortBy('badges')">Badges${arrow('badges')}</th>
+        </tr></thead>
+        <tbody>
+          ${sorted.map(st => `
+            <tr class="clickable status-${st.status}" onclick="showStudent('${currentClass}','${st.id}')">
+              <td><strong>${st.name || st.id}</strong></td>
+              <td>${(st.xp || 0).toLocaleString()}</td>
+              <td>${st.totalSessions || 0}</td>
+              <td>${st.acc}%</td>
+              <td>${st.mastered}</td>
+              <td>${st.streak || 0}</td>
+              <td style="color:var(--${st.status === 'active' ? 'correct' : st.status === 'warn' ? 'warn' : 'danger'})">${st.lastActive ? formatDate(st.lastActive) : 'Never'}</td>
+              <td><div class="badge-dots">${(st.badges || []).map(b => `<span class="badge-dot" title="${b}">${BADGE_MAP[b] || '?'}</span>`).join('')}</div></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function sortBy(col) {
+  if (currentSort.col === col) currentSort.asc = !currentSort.asc;
+  else { currentSort.col = col; currentSort.asc = col === 'name'; }
+  renderClassOverview(classCache[currentClass]);
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  if (diff < 7) return diff + 'd ago';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+// ===== STUDENT DETAIL =====
+async function showStudent(classId, studentId) {
+  showScreen('detail-screen');
+  const detail = document.getElementById('detail-content');
+  detail.innerHTML = '<div class="loading">Loading student data...</div>';
+
+  const students = classCache[classId];
+  const st = students.find(s => s.id === studentId);
+  if (!st) { detail.innerHTML = '<div class="loading">Student not found.</div>'; return; }
+
+  const ans = st.totalAnswered || 0;
+  const acc = ans > 0 ? Math.round((st.totalCorrect || 0) / ans * 100) : 0;
+
+  // Compute per-source progress
+  const unitSections = [];
+  if (st.progress) {
+    for (const [slug, prog] of Object.entries(st.progress)) {
+      if (!prog.words) continue;
+      const words = Object.entries(prog.words).map(([w, counts]) => {
+        const c = counts.c || 0, wr = counts.w || 0;
+        let status = 'unseen';
+        if (c >= 3 && c > wr) status = 'mastered';
+        else if (wr > 0 && wr >= c) status = 'weak';
+        else if (c > 0) status = 'practiced';
+        return { word: w, c, w: wr, status };
+      });
+      const total = words.length;
+      const mastered = words.filter(w => w.status === 'mastered').length;
+      const practiced = words.filter(w => w.status === 'practiced').length;
+      const weak = words.filter(w => w.status === 'weak').length;
+      const unseen = words.filter(w => w.status === 'unseen').length;
+      const order = { weak: 0, practiced: 1, unseen: 2, mastered: 3 };
+      words.sort((a, b) => order[a.status] - order[b.status]);
+      unitSections.push({ name: prog.source || slug, slug, total, mastered, practiced, weak, unseen, words });
+    }
+  }
+  unitSections.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Mastered total
+  let totalMastered = 0, totalWeak = 0;
+  unitSections.forEach(u => { totalMastered += u.mastered; totalWeak += u.weak; });
+
+  // Session history
+  const sessions = st.sessions || [];
+
+  // Daily challenge log
+  const dailyLog = st.dailyChallengeLog || {};
+  const dailyEntries = Object.entries(dailyLog).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 30);
+
+  detail.innerHTML = `
+    <div class="detail-header">
+      <button class="back" onclick="backToOverview()">← Back</button>
+      <h2>${st.name || st.id}</h2>
+      <span class="xp-tag">⭐ ${(st.xp || 0).toLocaleString()} XP</span>
+      <div class="detail-badges">${(st.badges || []).map(b => `<span title="${b}">${BADGE_MAP[b] || '?'}</span>`).join('')}</div>
+    </div>
+
+    <div class="detail-stats">
+      <div class="detail-stat"><div class="val">${st.totalSessions || 0}</div><div class="lbl">Sessions</div></div>
+      <div class="detail-stat"><div class="val">${acc}%</div><div class="lbl">Accuracy</div></div>
+      <div class="detail-stat"><div class="val">${totalMastered}</div><div class="lbl">Mastered</div></div>
+      <div class="detail-stat"><div class="val">${totalWeak}</div><div class="lbl">Weak</div></div>
+      <div class="detail-stat"><div class="val">${st.streak || 0}</div><div class="lbl">Streak</div></div>
+      <div class="detail-stat"><div class="val">${st.bestSpeedRound || 0}</div><div class="lbl">Speed Best</div></div>
+      <div class="detail-stat"><div class="val">${st.totalSprints || 0}</div><div class="lbl">Sprints</div></div>
+    </div>
+
+    <div class="section-title">Unit Progress</div>
+    ${unitSections.map(u => `
+      <div class="unit-section">
+        <div class="unit-header" onclick="this.nextElementSibling.classList.toggle('open')">
+          <span>${u.name} <span class="unit-summary">${u.mastered}/${u.total} mastered</span></span>
+          <div class="unit-bar">
+            <div class="seg-mastered" style="width:${u.total ? u.mastered/u.total*100 : 0}%"></div>
+            <div class="seg-practiced" style="width:${u.total ? u.practiced/u.total*100 : 0}%"></div>
+            <div class="seg-weak" style="width:${u.total ? u.weak/u.total*100 : 0}%"></div>
+          </div>
+        </div>
+        <div class="unit-words">
+          ${u.words.map(w => `
+            <div class="word-row">
+              <div class="dot dot-${w.status}"></div>
+              <div class="word-text">${w.word}</div>
+              <div class="word-stat">${w.c}✓ ${w.w}✗</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('')}
+
+    <div class="section-title">Session History</div>
+    <div class="table-wrap">
+      <table class="sessions-table">
+        <thead><tr><th>Date</th><th>Type</th><th>Score</th><th>Sources</th></tr></thead>
+        <tbody>
+          ${sessions.length === 0 ? '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem;">No sessions yet</td></tr>' :
+            sessions.map(s => {
+              const d = s.date ? (s.date.toDate ? s.date.toDate() : new Date(s.date)) : null;
+              const pct = s.pct || 0;
+              const cls = pct >= 80 ? 'high' : pct >= 50 ? 'mid' : 'low';
+              return `<tr>
+                <td>${d ? d.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—'}</td>
+                <td>${s.type || '—'}</td>
+                <td><span class="pct-badge pct-${cls}">${s.score}/${s.total} (${pct}%)</span></td>
+                <td style="font-size:0.78rem;color:var(--text-secondary)">${(s.sources || []).join(', ')}</td>
+              </tr>`;
+            }).join('')
+          }
+        </tbody>
+      </table>
+    </div>
+
+    ${dailyEntries.length > 0 ? `
+      <div class="section-title">Daily Challenge Log</div>
+      <div class="daily-grid">
+        ${dailyEntries.map(([date, val]) => {
+          const pct = val.pct || 0;
+          const cls = pct >= 80 ? 'correct' : pct >= 50 ? 'warn' : 'danger';
+          return `<div class="daily-item"><div class="d-date">${date}</div><div class="d-score" style="color:var(--${cls})">${val.score}/${val.total}</div></div>`;
+        }).join('')}
+      </div>
+    ` : ''}
+  `;
+}
+
+function backToOverview() {
+  showScreen('main-screen');
+}
+
+// ===== INIT =====
+document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+checkAuth();
+</script>
+</body>
+</html>
